@@ -1,0 +1,9 @@
+#pragma once
+
+#include "VkInclude.h"
+
+struct RtProgram {
+  VkPipeline pipeline;
+  VkPipelineLayout pl_layout;
+  
+};
