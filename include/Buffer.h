@@ -40,13 +40,13 @@ struct SceneGeometry {
 
   SceneGeometry(glm::vec3 pos, u32 vert_id, u32 mat_id);
   SceneGeometry(glm::vec3 pos, glm::vec3 axis, float angle, u32 vert_id, u32 mat_id);
+  SceneGeometry(glm::vec3 pos, glm::vec3 axis, float angle, glm::vec3 scale, u32 vert_id, u32 mat_id);
 };
 
 struct Material {
   glm::vec3 albedo{0,0,0};
-  glm::vec3 emmisive{0, 0, 0};
-  glm::vec3 specular_color{0,0,0};
-  float percent_specular{0};
+  float emmisive{0};
+  float metallic{0};
   float roughness{0};
 };
 

@@ -37,7 +37,7 @@ int main() {
   run(window);
 }
 
-static RtConfig rt_config { .sample_count = 4, .max_bounce = 10, .gamma = 2.2f, .exposure = 0.5f };
+static RtConfig rt_config { .sample_count = 3, .max_bounce = 5, .gamma = 2.2f, .exposure = 0.5f };
 
 void draw_gui(RtProgram& program) {
   const char* rgen = "../../../shaders/raytrace.rgen";
@@ -166,6 +166,7 @@ void run(GLFWwindow* window) {
   std::vector<SceneGeometry> scene;
   std::vector<Material> materials;
   u32 vert_count;
+  float plane_length = 2.5f;
   vkutil::immediate_submit([&](VkCommandBuffer buffer) {
     Vertex vertices[] = {
       {    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0 },
@@ -214,40 +215,56 @@ void run(GLFWwindow* window) {
     u32 indices[COUNT_OF(vertices)] = { 0 };
     for(u32 i = 0; i < COUNT_OF(vertices); ++i) indices[i] = i;
 
+    
     Vertex plane_vertices[] = {
-      {-10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 2},
-      {10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 2},
-      {10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 2},
-      {-10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 2},
+      {-plane_length, 0.0f, -plane_length, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 2},
+      {plane_length, 0.0f, -plane_length, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 2},
+      {plane_length, 0.0f, plane_length, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 2},
+      {-plane_length, 0.0f, plane_length, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 2},
     };
     u32 plane_indices[6] = { 0, 1, 2, 2, 3, 0};
     // describe the scene
     materials.push_back({
 	.albedo = glm::vec3(1,1,1),
-	.emmisive = glm::vec3(0, 0, 0),
-	.specular_color = glm::vec3(0),
-	.percent_specular = 0.0f,
+	.emmisive = 1.0f,
+	.metallic = 0.0f,
 	.roughness = 0.0f,
-      });
+      }); // white light 0
+    materials.push_back({
+    .albedo = glm::vec3(1,1,1),
+    .emmisive = 0.0f,
+    .metallic = 0.0f,
+    .roughness = 0.0f,
+        }); // matte white 1
     materials.push_back({
 	.albedo = glm::vec3(1,0,0),
-	.emmisive = glm::vec3(0, 0, 0),
-	.specular_color = glm::vec3(0),
-	.percent_specular = 0.0f,
+	.emmisive = 0.0f,
+	.metallic = 0.0f,
 	.roughness = 0.0f,
-      });
+      }); // matte red 2
     materials.push_back({
-	.albedo = glm::vec3(0,0,1),
-	.emmisive = glm::vec3(0, 0, 0),
-	.specular_color = glm::vec3(0),
-	.percent_specular = 0.0f,
+	.albedo = glm::vec3(0,1,0),
+	.emmisive = 0.0f,
+	.metallic = 0.0f,
 	.roughness = 0.0f,
-      });
+      }); // matte green 3
+    materials.push_back({
+    .albedo = glm::vec3(0,0,1),
+    .emmisive = 0.0f,
+    .metallic = 0.0f,
+    .roughness = 0.0f,
+        }); // matte blue 4
 
     // vert_id, mat_id
-    scene.emplace_back(glm::vec3(0, 0, 0),       1, 0);
-    scene.emplace_back(glm::vec3(0, 1.1, -3.33), 2, 1);
-    scene.emplace_back(glm::vec3(0, 1.1, 3.33),  2, 2);
+    
+    scene.emplace_back(glm::vec3(plane_length, 0, 0), 1, 1); // floor
+    scene.emplace_back(glm::vec3(plane_length, plane_length*2, 0), glm::vec3(1, 0, 0), glm::radians(180.0f), 1, 1); // ceiling
+    scene.emplace_back(glm::vec3(plane_length, (plane_length*2.0f)-0.1f, 0), glm::vec3(1, 0, 0), glm::radians(180.0f), glm::vec3(0.3), 1, 0); // ceiling light
+    scene.emplace_back(glm::vec3(plane_length, plane_length, plane_length), glm::vec3(1,0,0), glm::radians(-90.0f), 1, 3); // right wall
+    scene.emplace_back(glm::vec3(plane_length, plane_length, -plane_length), glm::vec3(1, 0, 0), glm::radians(90.0f), 1, 2); // left wall
+    scene.emplace_back(glm::vec3(plane_length*2, plane_length, 0), glm::vec3(0, 0, 1), glm::radians(90.0f), 1, 1); // back wall
+    scene.emplace_back(glm::vec3(1.5*plane_length, 1.1, -0.5*plane_length), 2, 1); // back left object
+    scene.emplace_back(glm::vec3(0.5*plane_length, 1.1, 0.5*plane_length), 2, 1); // front right object
 
     scene_buff.create(buffer, sizeof(SceneGeometry)*scene.size(), scene.data(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     mat_buff.create(buffer, sizeof(Material)*materials.size(), materials.data(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -282,7 +299,8 @@ void run(GLFWwindow* window) {
   tlas.build_tlas(scene_blases, (u32) scene.size());
   info_log("Built accleration structures");
   
-  Camera camera(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0));
+  Camera camera(glm::vec3(-6, plane_length, 0), glm::vec3(1, 0, 0));
+  
   DescSet global_set;
   global_set.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR); // camera
   global_set.add_binding(1, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR); // tlas
@@ -321,8 +339,12 @@ void run(GLFWwindow* window) {
     scene_set.make_write_array(vertex_info.data(), 0),
     scene_set.make_write_array(index_info.data(), 1),
     scene_set.make_write(scene_buff.get_desc_info(), 2),
-    scene_set.make_write_array(textures_info.data(), 3),
+    //scene_set.make_write_array(textures_info.data(), 3),
     scene_set.make_write(mat_buff.get_desc_info(), 4),
+  };
+  DescSet::update_writes(writes, COUNT_OF(writes));
+  WriteDescSet image_writes[] = {
+  scene_set.make_write_array(textures_info.data(), 3),
   };
   DescSet::update_writes(writes, COUNT_OF(writes));
   info_log("Staged resources");

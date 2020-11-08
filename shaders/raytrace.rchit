@@ -20,14 +20,6 @@ struct SceneGeometry {
   uint mat_id;
 };
 
-struct Material {
-  vec3 albedo;
-  vec3 emmisive;
-  vec3 specular_color;
-  float percent_specular;
-  float roughness;
-};
-
 layout(binding = 1, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 0, set = 1, scalar) buffer Vertices { Vertex v[]; } vertices[];
 layout(binding = 1, set = 1) buffer Indices { uint i[]; } indices[];
@@ -60,6 +52,5 @@ void main() {
   vec2 tex_coord = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 
   vec4 tex_color = texture(textures[tex_index], tex_coord);
-  vec3 diffuse = materials.m[mat_id].albedo;
-  prd = scatter(0, diffuse, gl_WorldRayDirectionEXT, normal, gl_HitTEXT, prd.seed);
+  prd = scatter(materials.m[mat_id], gl_WorldRayDirectionEXT, normal, gl_HitTEXT, prd.seed);
 }

@@ -47,10 +47,20 @@ SceneGeometry::SceneGeometry(glm::vec3 pos, u32 _vert_id, u32 _mat_id)
 
 SceneGeometry::SceneGeometry(glm::vec3 pos, glm::vec3 axis, float angle, u32 _vert_id, u32 _mat_id)
   : vert_id{_vert_id}, mat_id{_mat_id} {
-  transform = glm::rotate(glm::mat4(1), angle, axis);
-  transform = glm::translate(transform, pos);
+  transform = glm::translate(glm::mat4(1), pos);
+  transform = glm::rotate(transform, angle, axis);
   transformIT = glm::transpose(glm::inverse(transform));
 }
+
+SceneGeometry::SceneGeometry(glm::vec3 pos, glm::vec3 axis, float angle, glm::vec3 scale, u32 _vert_id, u32 _mat_id)
+    : vert_id{ _vert_id }, mat_id{ _mat_id } {
+    transform = glm::translate(glm::mat4(1), pos);
+    transform = glm::rotate(transform, angle, axis);
+    transform = glm::scale(transform, scale);
+
+    transformIT = glm::transpose(glm::inverse(transform));
+}
+
 void AllocatedBuffer::create(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage) {
   VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
   buffer_info.size = size;

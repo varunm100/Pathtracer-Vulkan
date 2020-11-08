@@ -50,6 +50,7 @@ void Camera::check_input(GLFWwindow* window, float dt) {
 
 void Camera::update_ubo() {
   if(!focused) return;
+  //info_log("{}", glm::to_string(this->m_Pos));
   cameraData.view = glm::lookAt(m_Pos, m_Pos + m_Dir, m_Up);
   cameraData.view_inverse = glm::inverse(cameraData.view);
   memcpy(data, &cameraData, sizeof(CameraData));
