@@ -27,6 +27,15 @@ float RandomFloat(inout uint seed){
   return (float(RandomInt(seed) & 0x00FFFFFF) / float(0x01000000));
 }
 
+uint wang_hash(inout uint seed){
+  seed = (seed ^ 61) ^ (seed >> 16);
+  seed *= 9;
+  seed = seed ^ (seed >> 4);
+  seed *= 0x27d4eb2d;
+  seed = seed ^ (seed >> 15);
+  return seed;
+}
+
 vec2 RandomInUnitDisk(inout uint seed){
   for (;;){
     const vec2 p = 2 * vec2(RandomFloat(seed), RandomFloat(seed)) - 1;

@@ -48,6 +48,7 @@ struct Material {
   float emmisive{0};
   float metallic{0};
   float roughness{0};
+  float ior{1};
 };
 
 struct AllocatedBuffer {

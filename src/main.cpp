@@ -226,28 +226,32 @@ void run(GLFWwindow* window) {
     // describe the scene
     materials.push_back({
 	.albedo = glm::vec3(1,1,1),
-	.emmisive = 1.0f,
+	.emmisive = 1.5f,
 	.metallic = 0.0f,
 	.roughness = 0.0f,
       }); // white light 0
+
     materials.push_back({
     .albedo = glm::vec3(1,1,1),
     .emmisive = 0.0f,
     .metallic = 0.0f,
     .roughness = 0.0f,
         }); // matte white 1
+    
     materials.push_back({
 	.albedo = glm::vec3(1,0,0),
 	.emmisive = 0.0f,
 	.metallic = 0.0f,
 	.roughness = 0.0f,
       }); // matte red 2
+    
     materials.push_back({
 	.albedo = glm::vec3(0,1,0),
 	.emmisive = 0.0f,
 	.metallic = 0.0f,
 	.roughness = 0.0f,
       }); // matte green 3
+    
     materials.push_back({
     .albedo = glm::vec3(0,0,1),
     .emmisive = 0.0f,
@@ -255,16 +259,23 @@ void run(GLFWwindow* window) {
     .roughness = 0.0f,
         }); // matte blue 4
 
+    materials.push_back({
+    .albedo = glm::vec3(1.0),
+    .emmisive = 0.0f,
+    .metallic = 0.1f,
+    .roughness = 0.5f,
+        }); // metallic white 5
+
     // vert_id, mat_id
     
     scene.emplace_back(glm::vec3(plane_length, 0, 0), 1, 1); // floor
     scene.emplace_back(glm::vec3(plane_length, plane_length*2, 0), glm::vec3(1, 0, 0), glm::radians(180.0f), 1, 1); // ceiling
-    scene.emplace_back(glm::vec3(plane_length, (plane_length*2.0f)-0.1f, 0), glm::vec3(1, 0, 0), glm::radians(180.0f), glm::vec3(0.3), 1, 0); // ceiling light
+    scene.emplace_back(glm::vec3(plane_length, (plane_length*2.0f)-0.001f, 0), glm::vec3(1, 0, 0), glm::radians(180.0f), glm::vec3(0.3), 1, 0); // ceiling light
     scene.emplace_back(glm::vec3(plane_length, plane_length, plane_length), glm::vec3(1,0,0), glm::radians(-90.0f), 1, 3); // right wall
     scene.emplace_back(glm::vec3(plane_length, plane_length, -plane_length), glm::vec3(1, 0, 0), glm::radians(90.0f), 1, 2); // left wall
     scene.emplace_back(glm::vec3(plane_length*2, plane_length, 0), glm::vec3(0, 0, 1), glm::radians(90.0f), 1, 1); // back wall
-    scene.emplace_back(glm::vec3(1.5*plane_length, 1.1, -0.5*plane_length), 2, 1); // back left object
-    scene.emplace_back(glm::vec3(0.5*plane_length, 1.1, 0.5*plane_length), 2, 1); // front right object
+    scene.emplace_back(glm::vec3(1.5*plane_length, 1.1, -0.5*plane_length), 0, 5); // back left object
+    scene.emplace_back(glm::vec3(0.5*plane_length, 1.1, 0.5*plane_length), 0, 1); // front right object
 
     scene_buff.create(buffer, sizeof(SceneGeometry)*scene.size(), scene.data(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     mat_buff.create(buffer, sizeof(Material)*materials.size(), materials.data(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);

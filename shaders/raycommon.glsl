@@ -1,15 +1,16 @@
-struct hitPayload {
-  vec4 color_dist;  // xyz and t
-  vec4 scatter_dir; // dir and if needed or not
-  vec3 emmisive;
-  uint seed;
-};
-
 struct Material {
   vec3 albedo;
   float emmisive;
   float metallic;
   float roughness;
+  float ior;
+};
+
+struct hitPayload {
+  Material mat;
+  vec4 color_dist;  // xyz and t
+  vec4 scatter_dir; // dir and if needed or not
+  uint seed;
 };
 
 vec3 less_than(vec3 f, float value) {

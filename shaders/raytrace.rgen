@@ -38,7 +38,9 @@ void main() {
   float tMax = 10000.0f;
 
   for(uint s = 0; s < num_samples; ++s) {
-    const vec2 pixel = vec2(gl_LaunchIDEXT.x + RandomFloat(pixelRandomSeed), gl_LaunchIDEXT.y + RandomFloat(pixelRandomSeed));
+    const vec2 jitter = vec2(RandomFloat(pixelRandomSeed), RandomFloat(pixelRandomSeed))-vec2(0.5);
+    const vec2 pixel = vec2(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y) + jitter;
+
     const vec2 uv = (pixel / gl_LaunchSizeEXT.xy) * 2.0 - 1.0;
     
     vec4 origin = cam.viewInverse * vec4(0, 0, 0, 1);
@@ -47,7 +49,7 @@ void main() {
     vec3 ray_color = vec3(0);
     vec3 throughput = vec3(1);
     for(uint sc = 0; sc <= num_bounces; ++sc) {
-      traceRayEXT(  topLevelAS,   // acceleration structure
+      traceRayEXT(topLevelAS,   // acceleration structure
                     rayFlags,     // rayFlags
                     0xFF,         // cullMask
                     0,            // stbRecordOffset
@@ -60,13 +62,19 @@ void main() {
                     0);           // payload (location = 0);
 
       const vec3 hit_color = prd.color_dist.rgb;
-      const vec3 emmisive = prd.emmisive.rgb;
+      const vec3 emmisive = prd.mat.emmisive*prd.color_dist.rgb;
       const float t = prd.color_dist.w;
       const bool is_scattered = prd.scatter_dir.w > 0;
 
       if(t < 0 || !is_scattered) break;
       ray_color += emmisive*throughput;
       throughput *= hit_color;
+
+      //russian roulette
+      float p = max(throughput.r, max(throughput.g, throughput.b));
+      if(RandomFloat(pixelRandomSeed) > p) break;
+      throughput /= prd.scatter_dir.w; // ray probability
+      throughput *= 1.0/p;
 
       origin = origin + t*direction;
       direction = vec4(prd.scatter_dir.xyz, 0);
