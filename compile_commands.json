@@ -31,6 +31,11 @@
 },
 {
   "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\FileIncluder.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\FileIncluder.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/FileIncluder.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
   "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\Blas.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\Blas.cpp",
   "file": "C:/Users/varun/programming/RaytracingTest/src/Blas.cpp"
 },
@@ -43,5 +48,35 @@
   "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
   "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\RtProgram.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\RtProgram.cpp",
   "file": "C:/Users/varun/programming/RaytracingTest/src/RtProgram.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui_draw.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui_draw.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui_draw.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui_widgets.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui_widgets.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui_widgets.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui_impl_glfw.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui_impl_glfw.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui_impl_glfw.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui_impl_vulkan.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui_impl_vulkan.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui_impl_vulkan.cpp"
+},
+{
+  "directory": "C:/Users/varun/programming/RaytracingTest/Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1427~1.291\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I..\\RaytracingTest -I..\\src -I..\\include -I..\\include\\vendor /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++latest /FoCMakeFiles\\RaytracingTest.dir\\src\\imgui_demo.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\varun\\programming\\RaytracingTest\\src\\imgui_demo.cpp",
+  "file": "C:/Users/varun/programming/RaytracingTest/src/imgui_demo.cpp"
 }
 ]
