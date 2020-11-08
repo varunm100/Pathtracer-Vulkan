@@ -35,3 +35,7 @@
 *~
 .ccls-cache
 .vs
+#*
+.#*
+out
+Debug
