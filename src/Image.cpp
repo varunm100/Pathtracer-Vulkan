@@ -57,13 +57,22 @@ void AllocatedImage::create(VkImageUsageFlags image_usage, VkExtent3D extent, u3
   VK_CHECK(vkCreateSampler(vkcontext.device, &sampler_info, nullptr, &sampler));
 }
 
-VkDescriptorImageInfo AllocatedImage::get_desc_info(VkImageLayout image_layout) {
-  VkDescriptorImageInfo image_info = {};
-  image_info.imageLayout = image_layout;
-  image_info.imageView = view;
-  image_info.sampler = sampler;
+VkDescriptorImageInfo* AllocatedImage::get_desc_info(VkImageLayout image_layout) {
+  desc_info = { };
+  desc_info.imageLayout = image_layout;
+  desc_info.imageView = view;
+  desc_info.sampler = sampler;
 
-  return std::move(image_info);
+  return &desc_info;
+}
+
+void AllocatedImage::fill_desc_infos(AllocatedImage* images, VkDescriptorImageInfo* image_infos, u32 count, VkImageLayout image_layout) {
+  for (u32 i = 0; i < count; ++i) {
+    image_infos[i] = {};
+    image_infos[i].imageLayout = image_layout;
+    image_infos[i].imageView = images[i].view;
+    image_infos[i].sampler = images[i].sampler;
+  }
 }
 
 VkAccessFlags accessFlagsForImageLayout(VkImageLayout layout) {

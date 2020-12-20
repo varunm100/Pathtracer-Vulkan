@@ -41,7 +41,7 @@ void DescSet::allocate_sets(u32 count, DescSet* sets) {
   DescSet::desc_arr_offset += count;
 }
 
-WriteDescSet DescSet::make_write(VkDescriptorBufferInfo buffer_info, u32 binding, u32 arr_element) {
+WriteDescSet DescSet::make_write(VkDescriptorBufferInfo* buffer_info, u32 binding, u32 arr_element) {
   for (u32 i = 0; i < bindings.size(); ++i) {
     if (bindings[i].binding == binding) {
       WriteDescSet write_set{{
@@ -52,7 +52,7 @@ WriteDescSet DescSet::make_write(VkDescriptorBufferInfo buffer_info, u32 binding
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pBufferInfo = &buffer_info,
+	    .pBufferInfo = buffer_info,
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -61,7 +61,7 @@ WriteDescSet DescSet::make_write(VkDescriptorBufferInfo buffer_info, u32 binding
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pBufferInfo = &buffer_info,
+	    .pBufferInfo = buffer_info,
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -70,7 +70,7 @@ WriteDescSet DescSet::make_write(VkDescriptorBufferInfo buffer_info, u32 binding
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pBufferInfo = &buffer_info,
+	    .pBufferInfo = buffer_info,
           },
       }};
       return std::move(write_set);
@@ -82,13 +82,13 @@ WriteDescSet DescSet::make_write(VkDescriptorBufferInfo buffer_info, u32 binding
   return empty_set;
 }
 
-WriteDescSet DescSet::make_write(VkWriteDescriptorSetAccelerationStructureKHR as_info, u32 binding, u32 arr_element) {
+WriteDescSet DescSet::make_write(VkWriteDescriptorSetAccelerationStructureKHR* as_info, u32 binding, u32 arr_element) {
   for (u32 i = 0; i < bindings.size(); ++i) {
     if (bindings[i].binding == binding) {
       WriteDescSet write_set{{
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = &as_info,
+	    .pNext = as_info,
 	    .dstSet = vkcontext.frame_data[0].desc_sets[id],
 	    .dstBinding = binding,
 	    .dstArrayElement = arr_element,
@@ -97,7 +97,7 @@ WriteDescSet DescSet::make_write(VkWriteDescriptorSetAccelerationStructureKHR as
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = &as_info,
+	    .pNext = as_info,
 	    .dstSet = vkcontext.frame_data[1].desc_sets[id],
 	    .dstBinding = binding,
 	    .dstArrayElement = arr_element,
@@ -106,7 +106,7 @@ WriteDescSet DescSet::make_write(VkWriteDescriptorSetAccelerationStructureKHR as
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = &as_info,
+	    .pNext = as_info,
 	    .dstSet = vkcontext.frame_data[2].desc_sets[id],
 	    .dstBinding = binding,
 	    .dstArrayElement = arr_element,
@@ -123,7 +123,7 @@ WriteDescSet DescSet::make_write(VkWriteDescriptorSetAccelerationStructureKHR as
   return empty_set;
 }
 
-WriteDescSet DescSet::make_write(VkDescriptorImageInfo image_info, u32 binding, u32 arr_element) {
+WriteDescSet DescSet::make_write(VkDescriptorImageInfo* image_info, u32 binding, u32 arr_element) {
   for (u32 i = 0; i < bindings.size(); ++i) {
     if (bindings[i].binding == binding) {
       WriteDescSet write_set{{
@@ -134,7 +134,7 @@ WriteDescSet DescSet::make_write(VkDescriptorImageInfo image_info, u32 binding, 
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pImageInfo = &image_info,
+	    .pImageInfo = image_info,
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -143,7 +143,7 @@ WriteDescSet DescSet::make_write(VkDescriptorImageInfo image_info, u32 binding, 
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pImageInfo = &image_info,
+	    .pImageInfo = image_info,
           },
           {
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -152,7 +152,7 @@ WriteDescSet DescSet::make_write(VkDescriptorImageInfo image_info, u32 binding, 
 	    .dstArrayElement = arr_element,
 	    .descriptorCount = bindings[i].descriptorCount,
 	    .descriptorType = bindings[i].descriptorType,
-	    .pImageInfo = &image_info,
+	    .pImageInfo = image_info,
           },
       }};
       return std::move(write_set);
@@ -271,7 +271,7 @@ std::vector<VkDescriptorSetLayout> DescSet::get_pl_layouts(DescSet* sets, u32 co
   for (u32 i = 0; i < count; ++i) {
     layouts[i] = sets[i].layout;
   }
-  return std::move(layouts);	
+  return std::move(layouts);
 }
 
 DescSet DescSet::get_copy() {

@@ -19,18 +19,18 @@ struct VertexInputDescription {
 //   static void getVertexDesc(VertexInputDescription& desc);
 // };
 
-struct Vertex {
-  glm::vec3 position;
-  glm::vec3 normal;
-  glm::vec2 uv;
-  u32 tex_id;
+// struct Vertex {
+//   glm::vec3 position;
+//   glm::vec3 normal;
+//   glm::vec2 uv;
+//   u32 tex_id;
 
-  Vertex(glm::vec3 _position, glm::vec3 _normal, glm::vec2 _uv, u32 _tex_id);
-  Vertex(float px, float py, float pz,
-	 float nx, float ny, float nz,
-	 float ux, float uy,
-	 u32 _tex_id);
-};
+//   Vertex(glm::vec3 _position, glm::vec3 _normal, glm::vec2 _uv, u32 _tex_id);
+//   Vertex(float px, float py, float pz,
+// 	 float nx, float ny, float nz,
+// 	 float ux, float uy,
+// 	 u32 _tex_id);
+// };
 
 struct SceneGeometry {
   glm::mat4 transform;
@@ -43,17 +43,18 @@ struct SceneGeometry {
   SceneGeometry(glm::vec3 pos, glm::vec3 axis, float angle, glm::vec3 scale, u32 vert_id, u32 mat_id);
 };
 
-struct Material {
-  glm::vec3 albedo{0,0,0};
-  float emmisive{0};
-  float metallic{0};
-  float roughness{0};
-  float ior{1};
-};
+// struct Material {
+//   glm::vec3 albedo{0,0,0};
+//   float emmisive{0};
+//   float metallic{0};
+//   float roughness{0};
+//   float ior{1};
+// };
 
 struct AllocatedBuffer {
   VkBuffer buffer { VK_NULL_HANDLE };
   VmaAllocation allocation { VK_NULL_HANDLE };
+  VkDescriptorBufferInfo desc_info;
 
   VkDeviceAddress get_device_addr();
   void create(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage=VMA_MEMORY_USAGE_GPU_ONLY);
@@ -62,7 +63,8 @@ struct AllocatedBuffer {
   void* map();
   void unmap();
   
-  VkDescriptorBufferInfo get_desc_info(VkDeviceSize offset=0, VkDeviceSize range=VK_WHOLE_SIZE);
+  VkDescriptorBufferInfo* get_desc_info(VkDeviceSize offset=0, VkDeviceSize range=VK_WHOLE_SIZE);
+  static void fill_desc_infos(AllocatedBuffer* buffers, VkDescriptorBufferInfo* buffer_infos, u32 count);
 };
 
 namespace vkcmd {

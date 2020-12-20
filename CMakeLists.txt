@@ -23,6 +23,7 @@ set(SOURCE_FILES
   ${SOURCES_DIR}/Blas.cpp
   ${SOURCES_DIR}/Camera.cpp
   ${SOURCES_DIR}/RtProgram.cpp
+  ${SOURCES_DIR}/Scene.cpp
   )
 
 add_executable(RaytracingTest ${SOURCE_FILES}
@@ -36,4 +37,4 @@ add_executable(RaytracingTest ${SOURCE_FILES}
   )
 
 #set_property(TARGET RaytracingTest PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "C:/Users/varun/programming/RaytracingTest")
-target_link_libraries(RaytracingTest glfw3 vulkan-1 shaderc_combined spdlogd gdi32 user32 kernel32 ${CMAKE_DL_LIBS})
+target_link_libraries(RaytracingTest ${CMAKE_BUILD_TYPE}/glfw3 ${CMAKE_BUILD_TYPE}/vulkan-1 ${CMAKE_BUILD_TYPE}/shaderc_combined ${CMAKE_BUILD_TYPE}/spdlogd gdi32 user32 kernel32 ${CMAKE_DL_LIBS})

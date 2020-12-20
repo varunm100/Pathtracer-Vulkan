@@ -1,16 +1,31 @@
+#define PI 3.1415926
+#define EPS 0.001
+#define INFINITY  1000000.0
+
 struct Material {
-  vec3 albedo;
-  float emmisive;
+  vec4 albedo; // w = materialType
+  vec3 emission;
+
   float metallic;
   float roughness;
   float ior;
+
+  vec3 tex_ids; // albedo, metallic rougness, normal
+};
+
+struct Light {
+  vec3 pos;
+  vec3 emission;
+  vec3 u;
+  vec3 v;
+  vec3 radius_area_type;
 };
 
 struct hitPayload {
-  Material mat;
-  vec4 color_dist;  // xyz and t
-  vec4 scatter_dir; // dir and if needed or not
-  uint seed;
+  vec3 normal;
+  vec2 uv;
+  uint mat_id;
+  float t;
 };
 
 vec3 less_than(vec3 f, float value) {

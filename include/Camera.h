@@ -19,14 +19,15 @@ struct Camera
   glm::vec3 m_Pos, m_Up = glm::vec3(0.0f, 1.0f, 0.0f), m_Dir;
   bool first = true;
   const float rotSpeed = 0.015f;
-  const float moveSpeed = 0.0025f;
+  const float moveSpeed = 0.0005f;
+  u32 frame_count = 1;
   AllocatedBuffer ubo;
   CameraData cameraData;
   bool focused = true;
   void* data;
   
-  Camera(glm::vec3 initialPos, glm::vec3 dir);
-  ~Camera() { ubo.unmap(); }
+  Camera(glm::vec3 initial_pos, glm::vec3 look_at, float fov);
+ ~Camera() { ubo.unmap(); }
 
   void mouse_callback(GLFWwindow* window, double xpos, double ypos);
   void check_input(GLFWwindow* window, float dt);

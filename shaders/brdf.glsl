@@ -1,47 +1,105 @@
+#extension GL_GOOGLE_include_directive : enable
+
 #include "random.glsl"
-#include "raycommon.glsl"
 
-#define PI 3.1415926
-
-float ggxNormalDistribution(float NdotH, float roughness){
-  float a2 = roughness * roughness;
-  float d = ((NdotH * a2 - NdotH) * NdotH + 1);
-  return a2 / (d * d * PI);
+float SchlickFresnel(float u) {
+    float m = clamp(1.0 - u, 0.0, 1.0);
+    float m2 = m * m;
+    return m2 * m2*m; // pow(m,5)
 }
 
-float schlickMaskingTerm(float NdotL, float NdotV, float roughness){
-	// Karis notes they use alpha / 2 (or roughness^2 / 2)
-	float k = roughness*roughness / 2;
-
-	// Compute G(v) and G(l).  These equations directly from Schlick 1994
-	//     (Though note, Schlick's notation is cryptic and confusing.)
-	float g_v = NdotV / (NdotV*(1 - k) + k);
-	float g_l = NdotL / (NdotL*(1 - k) + k);
-	return g_v * g_l;
+float GTR2(float NDotH, float a) {
+    float a2 = a * a;
+    float t = 1.0 + (a2 - 1.0)*NDotH*NDotH;
+    return a2 / (PI * t*t);
 }
 
-vec3 schlickFresnel(vec3 f0, float lDotH)
-{
-	return f0 + (vec3(1.0f, 1.0f, 1.0f) - f0) * pow(1.0f - lDotH, 5.0f);
+float SmithG_GGX(float NDotv, float alphaG) {
+    float a = alphaG * alphaG;
+    float b = NDotv * NDotv;
+    return 1.0 / (NDotv + sqrt(a + b - a * b));
 }
 
-// vec3 getGGXMicrofacet(inout uint randSeed, float roughness, float3 hitNorm)
-// {
-// 	// Get our uniform random numbers
-// 	vec2 randVal = float2(nextRand(randSeed), nextRand(randSeed));
+vec3 mat_eval(vec3 incident, vec3 bsdf_dir, vec3 normal, in Material mat) {
+  vec3 N = normal.xyz;
+  vec3 V = incident;
+  vec3 L = bsdf_dir;
 
-// 	// Get an orthonormal basis from the normal
-// 	vec2 B = getPerpendicularVector(hitNorm);
-// 	float3 T = cross(B, hitNorm);
+  float NDotL = dot(N, L);
+  float NDotV = dot(N, V);
 
-// 	// GGX NDF sampling
-// 	float a2 = roughness * roughness;
-// 	float cosThetaH = sqrt(max(0.0f, (1.0-randVal.x)/((a2-1.0)*randVal.x+1) ));
-// 	float sinThetaH = sqrt(max(0.0f, 1.0f - cosThetaH * cosThetaH));
-// 	float phiH = randVal.y * M_PI * 2.0f;
+  if(NDotL <= 0.0 || NDotV <= 0.0) return vec3(0.0);
 
-// 	// Get our GGX NDF sample (i.e., the half vector)
-// 	return T * (sinThetaH * cos(phiH)) +
-//            B * (sinThetaH * sin(phiH)) +
-//            hitNorm * cosThetaH;
-// }
+  vec3 H = normalize(L + V);
+  float NDotH = dot(N, H);
+  float LDotH = dot(L, H);
+
+  float specular = 0.5;
+  vec3 specularColor = mix(vec3(1.0) * 0.08 * specular, mat.albedo.xyz, mat.metallic);
+  float a = max(0.001, mat.roughness);
+  float Ds = GTR2(NDotH, a);
+  float FH = SchlickFresnel(LDotH);
+  vec3 Fs = mix(specularColor, vec3(1.0), FH);
+  float roughg = mat.roughness*0.5 + 0.5;
+  roughg = roughg*roughg;
+  float Gs = SmithG_GGX(NDotL, roughg) * SmithG_GGX(NDotV, roughg);
+
+  return (mat.albedo.xyz / 3.141592) * (1.0 - mat.metallic) + Gs * Fs * Ds;
+}
+
+vec3 mat_sample(vec3 incident, vec3 normal, inout uint rng_state, in Material mat) {
+  vec3 N = normal;
+  vec3 V = incident;
+
+  vec3 dir;
+
+  float probability = rand(rng_state);
+  float diffuseRatio = 0.5 * (1.0 - mat.metallic);
+
+  float r1 = rand(rng_state);
+  float r2 = rand(rng_state);
+
+  vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
+  vec3 TangentX = normalize(cross(UpVector, N));
+  vec3 TangentY = cross(N, TangentX);
+
+  if(probability < diffuseRatio) { // do diffuse
+    dir = cosine_sample_hemisphere(rng_state);
+    dir = TangentX * dir.x + TangentY * dir.y + N * dir.z;
+  } else {
+    float a = max(0.001, mat.roughness);
+    float phi = r1 * 2.0 * 3.141592;
+
+    float cosTheta = sqrt((1.0 - r2) / (1.0 + (a*a - 1.0) *r2));
+    float sinTheta = clamp(sqrt(1.0 - (cosTheta * cosTheta)), 0.0, 1.0);
+    float sinPhi = sin(phi);
+    float cosPhi = cos(phi);
+
+    vec3 halfVec = vec3(sinTheta*cosPhi, sinTheta*sinPhi, cosTheta);
+    halfVec = TangentX * halfVec.x + TangentY * halfVec.y + N * halfVec.z;
+
+    dir = 2.0*dot(V, halfVec)*halfVec - V;
+  }
+  return dir;
+}
+
+float mat_pdf(vec3 incident, vec3 normal, vec3 bsdf_dir, Material mat) {
+  vec3 n = normal;
+  vec3 V = incident;
+  vec3 L = bsdf_dir;
+
+  float specularAlpha = max(0.001, mat.roughness);
+
+  float diffuseRatio = 0.5 * (1.0 - mat.metallic);
+  float specularRatio = 1 - diffuseRatio;
+
+  vec3 halfVec = normalize(L + V);
+
+  float cosTheta = abs(dot(halfVec, n));
+  float pdfGTR2 = GTR2(cosTheta, specularAlpha) * cosTheta;
+
+  float pdfSpec = pdfGTR2 / (4.0 * abs(dot(L, halfVec)));
+  float pdfDiff = abs(dot(L, n)) * (1.0 / 3.141592);
+
+  return diffuseRatio * pdfDiff + specularRatio * pdfSpec;
+}

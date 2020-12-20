@@ -4,16 +4,16 @@
 // Vertex::Vertex(float x, float y, float z, float ux, float uy) {
 //   position = glm::vec3(x, y, z);
 //   uv = glm::vec2(ux, uy);
-// }
-Vertex::Vertex(glm::vec3 _position, glm::vec3 _normal, glm::vec2 _uv,u32 _tex_id)
-    : position{_position}, normal{_normal}, uv{_uv}, tex_id{_tex_id} {}
+// // }
+// Vertex::Vertex(glm::vec3 _position, glm::vec3 _normal, glm::vec2 _uv,u32 _tex_id)
+//     : position{_position}, normal{_normal}, uv{_uv}, tex_id{_tex_id} {}
 
-Vertex::Vertex(float px, float py, float pz, float nx, float ny, float nz, float ux, float uy, u32 _tex_id) {
-  position = glm::vec3(px, py, pz);
-  normal = glm::vec3(nx, ny, nz);
-  uv = glm::vec2(ux, uy);
-  tex_id = _tex_id;
-}
+// Vertex::Vertex(float px, float py, float pz, float nx, float ny, float nz, float ux, float uy, u32 _tex_id) {
+//   position = glm::vec3(px, py, pz);
+//   normal = glm::vec3(nx, ny, nz);
+//   uv = glm::vec2(ux, uy);
+//   tex_id = _tex_id;
+// }
 
 // void Vertex::getVertexDesc(VertexInputDescription &desc) {
 //   VkVertexInputBindingDescription main_binding = {};
@@ -91,13 +91,22 @@ void AllocatedBuffer::unmap() {
   vmaUnmapMemory(vkallocator, allocation);
 }
 
-VkDescriptorBufferInfo AllocatedBuffer::get_desc_info(VkDeviceSize offset, VkDeviceSize range) {
-  VkDescriptorBufferInfo descriptor_info {};
-  descriptor_info.buffer = buffer;
-  descriptor_info.offset = offset;
-  descriptor_info.range  = range;
+VkDescriptorBufferInfo* AllocatedBuffer::get_desc_info(VkDeviceSize offset, VkDeviceSize range) {
+  desc_info = { };
+  desc_info.buffer = buffer;
+  desc_info.offset = offset;
+  desc_info.range  = range;
+  
+  return &desc_info;
+}
 
-  return std::move(descriptor_info);
+void AllocatedBuffer::fill_desc_infos(AllocatedBuffer* buffers, VkDescriptorBufferInfo* buffer_infos, u32 count) {
+  for (u32 i = 0; i < count; ++i) {
+    buffer_infos[i] = {};
+    buffer_infos[i].buffer = buffers[i].buffer;
+    buffer_infos[i].offset = 0;
+    buffer_infos[i].range = VK_WHOLE_SIZE;
+  }
 }
 
 VkDeviceAddress AllocatedBuffer::get_device_addr() {

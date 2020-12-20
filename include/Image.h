@@ -9,9 +9,11 @@ struct AllocatedImage {
   VkImageView view { VK_NULL_HANDLE };
   VkSampler sampler { VK_NULL_HANDLE };
   VmaAllocation allocation { VK_NULL_HANDLE };
+  VkDescriptorImageInfo desc_info;
 
   void create(VkImageUsageFlags image_usage, VkExtent3D extent, u32 mipmap_count=1);
-  VkDescriptorImageInfo get_desc_info(VkImageLayout image_layout);
+  VkDescriptorImageInfo* get_desc_info(VkImageLayout image_layout);
+  static void fill_desc_infos(AllocatedImage* images, VkDescriptorImageInfo* image_infos, u32 count, VkImageLayout image_layout);
   void cmdTransitionLayout(VkCommandBuffer cmd_buff, VkImageLayout old_layout, VkImageLayout new_layout);
   void cmdCopyImage(VkCommandBuffer cmd_buff, VkImage dst_image,VkImageLayout src_layout,VkImageLayout dst_layout, u32 copy_count, VkImageCopy* regions);
 };

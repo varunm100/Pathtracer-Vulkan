@@ -1,6 +1,7 @@
 #include "Context.h"
 #include "Blas.h"
 #include "CmdUtils.h"
+#include "Scene.h"
 
 void AccelStructure::create(VkAccelerationStructureCreateInfoKHR &create_info, VmaMemoryUsage mem_usage) {
   VK_CHECK(vkCreateAccelerationStructureKHR(vkcontext.device, &create_info, nullptr, &accel));
@@ -46,7 +47,7 @@ void Blas::add_buffers(AllocatedBuffer& vbo, AllocatedBuffer& ibo, u32 max_verti
   vertex_data.indexData.deviceAddress = ibo_addr;
   vertex_data.indexType = VK_INDEX_TYPE_UINT32;
   vertex_data.transformData = {};
-  vertex_data.vertexStride = {sizeof(Vertex)};
+  vertex_data.vertexStride = {sizeof(Vert)};
 
   geometry_info.vertex_data.emplace_back(vertex_data);
 
@@ -127,17 +128,19 @@ void Blas::build_blas(Blas* blases, u32 count, VkBuildAccelerationStructureFlags
     VK_CHECK(vkEndCommandBuffer(cmd_buffer));
   }
   VkFence build_done = vkutil::submit_cmd_buffers(cmd_buffers.data(), count);
-  vkWaitForFences(vkcontext.device, 1, &build_done, VK_TRUE, UINT64_MAX);
+  VkResult result = vkWaitForFences(vkcontext.device, 1, &build_done, VK_TRUE, UINT64_MAX);
+  if (result != VK_SUCCESS) {
+    err_log("vk_error waiting for blases to build: {}", result);
+  }
   vkutil::free_cmd_buffers(cmd_buffers.data(), count);
   scratch_buffer.destroy();
-  info_log("Built BLAS");
 }
 
 VkAccelerationStructureInstanceKHR Instance::toVkGeometryInstanceKHR(Blas *blas, u32 instance_id) const {
   VkAccelerationStructureDeviceAddressInfoKHR address_info = { VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR };
   address_info.accelerationStructure = blas[vert_id].accel_structure.accel;
   VkDeviceAddress blas_addr = vkGetAccelerationStructureDeviceAddressKHR(vkcontext.device, &address_info);
-
+  
   VkAccelerationStructureInstanceKHR instance_khr;
   // instance_khr.transform is a 4x3 matrix
   // saving the last row that is anyway always (0, 0, 0, 1)
@@ -202,8 +205,7 @@ void Tlas::build_tlas(Blas *blas, u32 count, VkBuildAccelerationStructureFlagsKH
 
   VkDeviceSize instance_desc_size = instances.size()*sizeof(VkAccelerationStructureInstanceKHR);
   const void* instance_data = geometry_instances.data();
-
-  vkutil::immediate_submit([&, this, build_flags, instance_desc_size, instance_data, scratch_addr](VkCommandBuffer cmd) {
+  vkutil::immediate_submit([&](VkCommandBuffer cmd) {
     instance_buffer.create(cmd, instance_desc_size, instance_data, VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
     VkMemoryBarrier barrier { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -235,13 +237,11 @@ void Tlas::build_tlas(Blas *blas, u32 count, VkBuildAccelerationStructureFlagsKH
     vkCmdBuildAccelerationStructureKHR(cmd, 1, &topASInfo, &pBuildOffsetInfo);
   });
   scratch_buffer.destroy();
-
-  info_log("Built TLAS");
 }
 
-VkWriteDescriptorSetAccelerationStructureKHR Tlas::get_desc_info() {
-  VkWriteDescriptorSetAccelerationStructureKHR desc_info = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR };
+VkWriteDescriptorSetAccelerationStructureKHR* Tlas::get_desc_info() {
+  desc_info = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR };
   desc_info.accelerationStructureCount = 1;
   desc_info.pAccelerationStructures = &accel_structure.accel;
-  return std::move(desc_info);
+  return &desc_info;
 }

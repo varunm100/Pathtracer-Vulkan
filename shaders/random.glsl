@@ -1,11 +1,8 @@
 #extension GL_EXT_control_flow_attributes : require
 
-// Generates a seed for a random number generator from 2 inputs plus a backoff
 // https://github.com/nvpro-samples/optix_prime_baking/blob/332a886f1ac46c0b3eea9e89a59593470c755a0e/random.h
-// https://github.com/nvpro-samples/vk_raytracing_tutorial_KHR/tree/master/ray_tracing_jitter_cam
 // https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm
-uint InitRandomSeed(uint val0, uint val1)
-{
+uint init_random_seed(uint val0, uint val1){
   uint v0 = val0, v1 = val1, s0 = 0;
 
   [[unroll]] 
@@ -18,13 +15,13 @@ uint InitRandomSeed(uint val0, uint val1)
   return v0;
 }
 
-uint RandomInt(inout uint seed){
+uint random_int(inout uint seed){
 // LCG values from Numerical Recipes
   return (seed = 1664525 * seed + 1013904223);
 }
 
-float RandomFloat(inout uint seed){
-  return (float(RandomInt(seed) & 0x00FFFFFF) / float(0x01000000));
+float rand(inout uint seed){
+  return (float(random_int(seed) & 0x00FFFFFF) / float(0x01000000));
 }
 
 uint wang_hash(inout uint seed){
@@ -36,20 +33,26 @@ uint wang_hash(inout uint seed){
   return seed;
 }
 
-vec2 RandomInUnitDisk(inout uint seed){
-  for (;;){
-    const vec2 p = 2 * vec2(RandomFloat(seed), RandomFloat(seed)) - 1;
-    if (dot(p, p) < 1){
-      return p;
-    }
-  }
+vec3 cosine_sample_hemisphere(inout uint rng_state) {
+  float r1 = rand(rng_state);
+  float r2 = rand(rng_state);
+  vec3 dir;
+  float r = sqrt(r1);
+  float phi = 2.0 * 3.141592 * r2;
+  dir.x = r * cos(phi);
+  dir.y = r * sin(phi);
+  dir.z = sqrt(max(0.0, 1.0 - dir.x*dir.x - dir.y*dir.y));
+
+  return normalize(dir);
 }
 
-vec3 RandomInUnitSphere(inout uint seed) {
-  for (;;){
-    const vec3 p = 2 * vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 1;
-    if (dot(p, p) < 1){
-      return p;
-    }
-  }
+vec3 uniform_sample_sphere(inout uint rng_state) {
+  float r1 = rand(rng_state);
+  float r2 = rand(rng_state);
+  float z = 1.0 - 2.0 * r1;
+  float r = sqrt(max(0.f, 1.0 - z * z));
+  float phi = 2.0 * 3.141592 * r2;
+  float x = r * cos(phi);
+  float y = r * sin(phi);
+  return vec3(x, y, z);
 }

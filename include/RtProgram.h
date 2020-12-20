@@ -11,6 +11,9 @@ struct RtConfig {
   int max_bounce;
   float gamma;
   float exposure;
+  u32 num_lights;
+  u32 frame_count;
+  bool show_lights;
 };
 
 struct RtShader {

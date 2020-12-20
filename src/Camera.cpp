@@ -2,10 +2,15 @@
 #include "Common.h"
 #include "glm/ext.hpp"
 
-Camera::Camera(glm::vec3 initialPos, glm::vec3 dir)
-    : m_Pos{initialPos}, m_Dir{dir} {
-  cameraData.view = glm::lookAt(m_Pos, glm::vec3(0.0f, 0.0f, 0.0f), m_Up);
-  cameraData.proj = glm::perspective(glm::radians(45.0f), (float)1920 / (float)1080, 0.1f, 2000.0f);
+Camera::Camera(glm::vec3 initial_pos, glm::vec3 look_at, float fov) {
+  m_Pos = initial_pos;
+  m_Dir = glm::normalize(look_at - initial_pos);
+  m_Pitch = glm::degrees(asin(m_Dir.y));
+  m_Yaw = glm::degrees(atan2(m_Dir.z, m_Dir.x));
+  
+  cameraData.view = glm::lookAt(initial_pos, m_Dir, m_Up);
+  cameraData.view_inverse = glm::inverse(cameraData.view);
+  cameraData.proj = glm::perspective(glm::radians(fov), (float)1920 / (float)1080, 0.1f, 2000.0f);
   cameraData.proj_inverse = glm::inverse(cameraData.proj);
   cameraData.proj[1][1] *= -1;
   cameraData.proj_inverse[1][1] *= -1;
@@ -18,18 +23,24 @@ void Camera::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     prevY = (float) ypos;
     first = false;
   }
-  float dx = (float) xpos - prevX;
-  float dy = (float) -ypos + prevY;
+  float dx = (float) prevX - xpos;
+  float dy = (float) prevY - ypos;
   prevX = (float) xpos;
   prevY =(float) ypos;
+
   if(!focused) return;
-  m_Yaw += (dx * rotSpeed);
+
+  m_Yaw -= (dx * rotSpeed);
   m_Pitch += (dy * rotSpeed);
+
   if (m_Pitch > 89.0f)
     m_Pitch = 89.0f;
   if (m_Pitch < -89.0f)
     m_Pitch = -89.0f;
-  m_Dir = glm::normalize(glm::vec3(cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch)), sin(glm::radians(m_Pitch)), sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch))));
+
+  m_Dir = glm::normalize(glm::vec3(cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch)),
+				   sin(glm::radians(m_Pitch)),
+				   sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch))));
 }
 
 void Camera::check_input(GLFWwindow* window, float dt) {
@@ -50,9 +61,12 @@ void Camera::check_input(GLFWwindow* window, float dt) {
 
 void Camera::update_ubo() {
   if(!focused) return;
-  //info_log("{}", glm::to_string(this->m_Pos));
-  cameraData.view = glm::lookAt(m_Pos, m_Pos + m_Dir, m_Up);
-  cameraData.view_inverse = glm::inverse(cameraData.view);
-  memcpy(data, &cameraData, sizeof(CameraData));
+  glm::mat4 view = glm::lookAt(m_Pos, m_Pos + m_Dir, m_Up);
+  if (cameraData.view != view) {
+    frame_count = 0;
+    cameraData.view = view;
+    cameraData.view_inverse = glm::inverse(cameraData.view);
+    memcpy(data, &cameraData, sizeof(CameraData));
+  }
   //ubo.unmap();
 }

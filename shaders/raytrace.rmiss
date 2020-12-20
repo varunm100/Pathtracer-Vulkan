@@ -7,5 +7,5 @@
 layout(location = 0) rayPayloadInEXT hitPayload prd;
 
 void main() {
-  prd.color_dist = vec4(0, 0, 0, -1);
+  prd.t = INFINITY; // signals nothing hit
 }

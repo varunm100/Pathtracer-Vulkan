@@ -21,7 +21,12 @@ void VulkanContext::init_instance() {
   application_info.apiVersion = VK_API_VERSION_1_2;
   application_info.pApplicationName = "Raytracing Test";
 
-  const char* enabled_layers[] = { "VK_LAYER_KHRONOS_validation" };
+  const char* enabled_layers[] = {
+    #ifdef VALIDATION_LAYERS
+    "VK_LAYER_KHRONOS_validation",
+    #endif
+    "VK_LAYER_LUNARG_monitor",
+  };
 
   u32 extension_count;
   glfwGetRequiredInstanceExtensions(&extension_count);
@@ -403,7 +408,9 @@ void VulkanContext::init_imgui(GLFWwindow* window) {
 
 void VulkanContext::InitContext(GLFWwindow* window) {
   VulkanContext::init_instance();
+  #ifdef VALIDATION_LAYERS
   VulkanContext::init_debug_utils();
+  #endif
   VulkanContext::init_device();
   VulkanContext::init_allocator();
   VulkanContext::init_swapchain(window);  

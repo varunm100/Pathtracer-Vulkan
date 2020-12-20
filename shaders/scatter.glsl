@@ -1,35 +1,52 @@
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+
 #include "brdf.glsl"
 
-float FresnelReflectAmount(float n1, float n2, vec3 normal, vec3 incident, float f0, float f90){
-  // Schlick aproximation
-  float r0 = (n1-n2) / (n1+n2);
-  r0 *= r0;
-  float cosX = -dot(normal, incident);
-  if (n1 > n2) {
-    float n = n1/n2;
-    float sinT2 = n*n*(1.0-cosX*cosX);
-    // total internal reflection
-    if (sinT2 > 1.0) return f90;
-    cosX = sqrt(1.0-sinT2);
+float rect_intersect(in vec3 pos, in vec3 u, in vec3 v, in vec4 plane, in vec3 origin, in vec3 dir) {
+  vec3 n = vec3(plane);
+  float dt = dot(dir, n);
+  float t = (plane.w - dot(n, origin)) / dt;
+  if(t > EPS) {
+    vec3 p = origin + dir*t;
+    vec3 vi = p - pos;
+    float a1 = dot(u, vi);
+    if(a1 >= 0. && a1 <= 1.) {
+      float a2 = dot(v, vi);
+      if (a2 >= 0. && a2 <= 1.) return t;
+    }
   }
-  float x = 1.0-cosX;
-  float ret = r0+(1.0-r0)*x*x*x*x*x;
-  return mix(f0, f90, ret);
+  return INFINITY;
 }
 
-hitPayload scatter(Material mat, const vec3 dir, const vec3 normal, const float t, inout uint seed) {
-  bool is_scattered = dot(dir, normal) < 0;
-  const vec4 color_dist = vec4(mat.albedo, t);
-  float specular_chance = mat.metallic;
-  if(specular_chance > 0.0) {
-    specular_chance = FresnelReflectAmount(1.0, mat.ior, dir, normal, mat.metallic, 1.0f);
+float power_heuristic(float a, float b) {
+  return (a*a)/(a*a+b*b);
+}
+
+vec3 sample_quad_light(uint light_id, inout uint rng_state, out vec3 sample_normal) {
+  Light light = lights.l[light_id];
+
+  float r1 = rand(rng_state);
+  float r2 = rand(rng_state);
+
+  sample_normal = normalize(cross(light.u, light.v));
+  vec3 point = light.pos + light.u * r1 + light.v * r2;
+  return point;
+}
+
+vec3 sample_sphere_light(uint light_id, inout uint rng_state, out vec3 sample_normal) {
+  Light light = lights.l[light_id];
+
+  vec3 point = light.pos + uniform_sample_sphere(rng_state) * light.radius_area_type.x;
+  sample_normal = normalize(point - light.pos);  
+  return point;
+}
+
+vec3 sample_light(uint light_id, inout uint rng_state, out vec3 sample_normal) {
+  Light light = lights.l[light_id];
+  if(light.radius_area_type.z == 0) {
+    return sample_quad_light(light_id, rng_state, sample_normal);
+  } else if(light.radius_area_type.z == 1) {
+    return sample_sphere_light(light_id, rng_state, sample_normal);
   }
-  const float do_specular = (RandomFloat(seed) < specular_chance) ? 1.0f : 0.0f;
-  float ray_probability = (do_specular == 1.0f) ? specular_chance : 1.0f - specular_chance;
-  ray_probability = max(ray_probability, 0.001f);
-  const vec3 diffuse = normalize(normal + RandomInUnitSphere(seed));
-  vec3 specular = normalize(reflect(dir, normal));
-  specular = normalize(mix(specular, diffuse, mat.roughness*mat.roughness));
-  const vec4 scatter = vec4(mix(diffuse, specular, do_specular), is_scattered ? ray_probability : 0);
-  return hitPayload(mat, color_dist, scatter, seed);
 }
