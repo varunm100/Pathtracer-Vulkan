@@ -33,17 +33,15 @@ uint wang_hash(inout uint seed){
   return seed;
 }
 
-vec3 cosine_sample_hemisphere(inout uint rng_state) {
-  float r1 = rand(rng_state);
-  float r2 = rand(rng_state);
+vec3 cosine_sample_hemisphere(float u1, float u2) {
   vec3 dir;
-  float r = sqrt(r1);
-  float phi = 2.0 * 3.141592 * r2;
+  float r = sqrt(u1);
+  float phi = 2.0 * 3.141592 * u2;
   dir.x = r * cos(phi);
   dir.y = r * sin(phi);
   dir.z = sqrt(max(0.0, 1.0 - dir.x*dir.x - dir.y*dir.y));
 
-  return normalize(dir);
+  return dir;
 }
 
 vec3 uniform_sample_sphere(inout uint rng_state) {
@@ -54,5 +52,6 @@ vec3 uniform_sample_sphere(inout uint rng_state) {
   float phi = 2.0 * 3.141592 * r2;
   float x = r * cos(phi);
   float y = r * sin(phi);
+
   return vec3(x, y, z);
 }

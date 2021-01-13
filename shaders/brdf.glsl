@@ -60,11 +60,12 @@ vec3 mat_sample(vec3 incident, vec3 normal, inout uint rng_state, in Material ma
   float r2 = rand(rng_state);
 
   vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
+
   vec3 TangentX = normalize(cross(UpVector, N));
   vec3 TangentY = cross(N, TangentX);
 
   if(probability < diffuseRatio) { // do diffuse
-    dir = cosine_sample_hemisphere(rng_state);
+    dir = cosine_sample_hemisphere(r1, r2);
     dir = TangentX * dir.x + TangentY * dir.y + N * dir.z;
   } else {
     float a = max(0.001, mat.roughness);

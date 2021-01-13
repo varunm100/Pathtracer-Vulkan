@@ -34,7 +34,16 @@ layout( push_constant ) uniform RtConfig {
 
 #include "scatter.glsl"
 
-vec3 direct_lighting(inout uint rng_state, vec3 inter_p, in Material mat) {
+vec3 rand_vec(inout uint state) {
+  float z = rand(state) * 2.0f - 1.0f;
+  float a = rand(state) * 2 * PI;
+  float r = sqrt(1.0f - z * z);
+  float x = r * cos(a);
+  float y = r * sin(a);
+  return vec3(x, y, z);
+}
+
+vec3 direct_lighting(inout uint rng_state, vec3 inter_p, in Material mat, vec3 incident) {
   vec3 L = vec3(0);
   int index = int(rand(rng_state) * PushConstant.num_lights);
   Light light = lights.l[index];
@@ -62,23 +71,17 @@ vec3 direct_lighting(inout uint rng_state, vec3 inter_p, in Material mat) {
 
   bool in_shadow = prd.t < tlight;
   if(!in_shadow) {
-    float geometry_term = abs(dot(sample_normal, to_light))*abs(dot(prd.normal.xyz, to_light));
-    float pdf = (tlight*tlight*3.141592) / (light.radius_area_type.y * geometry_term);
-    L += light.emission/pdf;
+    float bsdf_pdf = mat_pdf(incident, prd.normal.xyz, to_light, mat);
+    vec3 f = mat_eval(incident, to_light, prd.normal.xyz, mat);
+    float light_pdf = (tlight*tlight) / (light.radius_area_type.y * abs(dot(prd.normal, to_light))* abs(dot(sample_normal, to_light)));
+
+    L += power_heuristic(light_pdf, bsdf_pdf)*f*light.emission/light_pdf;
   }
   return L;
 }
 
-vec3 rand_vec(inout uint state) {
-  float z = rand(state) * 2.0f - 1.0f;
-  float a = rand(state) * 2 * PI;
-  float r = sqrt(1.0f - z * z);
-  float x = r * cos(a);
-  float y = r * sin(a);
-  return vec3(x, y, z);
-}
 
-vec3 accumulate(inout uint rng_state, inout vec3 color, inout vec3 throughput, vec3 inter_p, vec3 dir) {
+vec3 accumulate(inout uint rng_state, inout vec3 radiance, inout vec3 throughput, vec3 inter_p, vec3 dir) {
   Material mat = materials.m[prd.mat_id];
 
   if(mat.tex_ids.x >= 0) { // albedo
@@ -94,17 +97,20 @@ vec3 accumulate(inout uint rng_state, inout vec3 color, inout vec3 throughput, v
     mat.metallic = metallic_roughness.x;
     mat.roughness = metallic_roughness.y;
   }
-  
-  vec3 out_dir = normalize(prd.normal + rand_vec(rng_state));
-  //out_dir = normalize(prd.normal + cosine_sample_hemisphere(rng_state));
-  vec3 L = direct_lighting(rng_state, inter_p, mat);
- 
-  color += mat.emission.xyz * throughput;
 
-  throughput *= mat.albedo.xyz;
-  color += L * throughput;
+  vec3 bsdf_dir = mat_sample(dir, prd.normal, rng_state, mat);
+  float bsdf_pdf = mat_pdf(dir, prd.normal, bsdf_dir, mat);
 
-  return out_dir;
+  vec3 normal = prd.normal;
+
+  vec3 directL = direct_lighting(rng_state, inter_p, mat, dir);
+  radiance += directL * throughput;
+
+  if(bsdf_pdf > 0.0) {
+    throughput *= mat_eval(dir, bsdf_dir, normal, mat) / bsdf_pdf;
+  }
+
+  return bsdf_dir;
 }
 
 bool intersects_light(vec3 origin, vec3 direction, out uint light_hit) {
@@ -176,13 +182,15 @@ void main() {
       if(prd.t == INFINITY) break;
       if(hit_light) {
         if(sc == 0 && PushConstant.show_lights == true) {
-          ray_color = lights.l[light].emission;
+          ray_color = lights.l[light].emission*throughput;
+	} else {
+          //ray_color = lights.l[light].emission*throughput;
 	}
 	// do not add radiance here, since direct lighting is already added for every bounce
 	break;
       }
       origin = origin + prd.t*direction;
-      direction = vec4(accumulate(rng_state, ray_color, throughput, origin.xyz, direction.xyz), 0);
+      direction = vec4(accumulate(rng_state, ray_color, throughput, origin.xyz, -direction.xyz), 0);
     }
     pixel_color += ray_color;
   }
