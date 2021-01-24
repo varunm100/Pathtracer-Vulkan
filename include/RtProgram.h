@@ -22,10 +22,10 @@ struct RtShader {
   VkShaderModule miss;
   VkShaderModule chit;
 
-  VkStridedBufferRegionKHR sbt_raygen{};
-  VkStridedBufferRegionKHR sbt_miss{};
-  VkStridedBufferRegionKHR sbt_rchit{};
-  VkStridedBufferRegionKHR sbt_call{};
+  VkStridedDeviceAddressRegionKHR sbt_raygen{};
+  VkStridedDeviceAddressRegionKHR sbt_miss{};
+  VkStridedDeviceAddressRegionKHR sbt_rchit{};
+  VkStridedDeviceAddressRegionKHR sbt_call{};
 };
 
 struct RtProgram {

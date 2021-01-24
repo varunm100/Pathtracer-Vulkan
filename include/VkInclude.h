@@ -1,6 +1,6 @@
 #pragma once
 
-#define VK_ENABLE_BETA_EXTENSIONS
+//#define VK_ENABLE_BETA_EXTENSIONS
 #include <volk/volk.h>
 #include <assert.h>
 

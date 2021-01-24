@@ -42,7 +42,7 @@ void GeometryData::load_obj(const std::string& filename) {
 	tinyobj::real_t ty = 0;
         if (!attrib.texcoords.empty()) {
 	  tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-	  ty = 1-attrib.texcoords[2 * idx.texcoord_index + 1]; // flip y axis, vulkan is weird lol
+	  ty = 1-attrib.texcoords[2 * idx.texcoord_index + 1]; // flip y axis
         }
 
         Vert vert{};

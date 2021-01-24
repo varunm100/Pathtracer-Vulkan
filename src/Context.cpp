@@ -81,7 +81,7 @@ void VulkanContext::init_device() {
       VkPhysicalDeviceFeatures device_features;
       vkGetPhysicalDeviceFeatures(device, &device_features);
       VkPhysicalDeviceProperties2 phys_device_prop = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
-      VkPhysicalDeviceRayTracingPropertiesKHR rt_properties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR };
+      VkPhysicalDeviceRayTracingPipelinePropertiesKHR rt_properties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
       rt_properties.pNext = nullptr;
       phys_device_prop.pNext = &rt_properties;
       vkGetPhysicalDeviceProperties2(device, &phys_device_prop);
@@ -127,33 +127,39 @@ void VulkanContext::init_device() {
     std::vector<VkDeviceQueueCreateInfo> queue_infos(1);
     queue_infos[0] = graphics_queue_info;
 
-    const char* deviceExtensions[] = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        
-      VK_KHR_RAY_TRACING_EXTENSION_NAME,
-      VK_KHR_MAINTENANCE3_EXTENSION_NAME,
-      VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
-      VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-      VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+    const char *deviceExtensions[] = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+
+	VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+	VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+	
+        VK_KHR_MAINTENANCE3_EXTENSION_NAME,
+        VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     };
-    
+
     VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES };
     descIndexingFeature.runtimeDescriptorArray = VK_TRUE;
     descIndexingFeature.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
     descIndexingFeature.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     descIndexingFeature.pNext = nullptr;
 
-    VkPhysicalDeviceRayTracingFeaturesKHR raytracingFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR };
-    raytracingFeature.rayTracing = VK_TRUE;
-    raytracingFeature.pNext = &descIndexingFeature;
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelStructureFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+    accelStructureFeature.accelerationStructure = VK_TRUE;
+    accelStructureFeature.pNext = &descIndexingFeature;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
+    raytracingFeature.rayTracingPipeline = VK_TRUE;
+    raytracingFeature.pNext = &accelStructureFeature;
 
     VkPhysicalDeviceScalarBlockLayoutFeatures scalarBlockLayoutFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES };
     scalarBlockLayoutFeature.scalarBlockLayout = VK_TRUE;
     scalarBlockLayoutFeature.pNext = &raytracingFeature;
 
     VkPhysicalDeviceBufferDeviceAddressFeatures deviceaddressFeature = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES };
-    deviceaddressFeature.pNext = &scalarBlockLayoutFeature;
     deviceaddressFeature.bufferDeviceAddress = VK_TRUE;
+    deviceaddressFeature.pNext = &scalarBlockLayoutFeature;
 
     VkPhysicalDeviceFeatures2 deviceFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     deviceFeatures.pNext = &deviceaddressFeature;

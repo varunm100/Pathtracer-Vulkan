@@ -61,7 +61,7 @@ void draw_gui(RtProgram& program, Camera* camera) {
   }
   ImGui::Text("Samples: %d", rt_config.frame_count*rt_config.sample_count);
   ImGui::SliderInt("Sample Count", &rt_config.sample_count, 0, 30);
-  ImGui::SliderInt("Max Bounce", &rt_config.max_bounce, 0, vkcontext.device_props.rt_properties.maxRecursionDepth);
+  ImGui::SliderInt("Max Bounce", &rt_config.max_bounce, 0, vkcontext.device_props.rt_properties.maxRayRecursionDepth);
   ImGui::SliderFloat("Gamma", &rt_config.gamma, 0, 5);
   ImGui::SliderFloat("Exposure", &rt_config.exposure, 0.0f, 1.0f);
   ImGui::Checkbox("Show Lights", &rt_config.show_lights);
@@ -70,10 +70,10 @@ void draw_gui(RtProgram& program, Camera* camera) {
 
 void run(GLFWwindow* window) {
   Scene scene;
-  std::string filename = "../../../scenes/cornell_box.scene";
+  std::string filename = "../../../scenes/diningroom.scene";
   scene.Load_Scene(filename);
   scene.Build_Structures();
-  rt_config.num_lights = scene.lights.size();
+  rt_config.num_lights = (u32) scene.lights.size();
   info_log("-- Loaded Scene --");
 
   AllocatedImage output_image;
@@ -119,7 +119,7 @@ void run(GLFWwindow* window) {
     Camera* tcam = (Camera*)glfwGetWindowUserPointer(window);
     if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
       int mode = tcam->focused ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
-      tcam->focused = 1 - tcam->focused;
+      tcam->focused = !tcam->focused;
       glfwSetInputMode(window, GLFW_CURSOR, mode);
     }
   });

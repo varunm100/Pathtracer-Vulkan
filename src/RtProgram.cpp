@@ -125,10 +125,10 @@ void RtProgram::init_shader_groups(const char* rgen, const char* rmiss, const ch
     pipeline_info.pStages = shader_stages.data();
     pipeline_info.groupCount = (u32) shader_groups.size();
     pipeline_info.pGroups = shader_groups.data();
-    pipeline_info.maxRecursionDepth = vkcontext.device_props.rt_properties.maxRecursionDepth-1;
+    pipeline_info.maxPipelineRayRecursionDepth = vkcontext.device_props.rt_properties.maxRayRecursionDepth-1;
     pipeline_info.layout = pl_layout;
-    pipeline_info.libraries = lib_info;
-    VK_CHECK(vkCreateRayTracingPipelinesKHR(vkcontext.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline));
+    pipeline_info.pLibraryInfo = nullptr;
+    VK_CHECK(vkCreateRayTracingPipelinesKHR(vkcontext.device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline));
   }
 }
 
@@ -141,7 +141,7 @@ void RtProgram::create_sbt() {
   std::vector<u8> shaderHandleStorage(sbtSize);
   vkGetRayTracingShaderGroupHandlesKHR(vkcontext.device, pipeline, 0, groupCount, sbtSize, shaderHandleStorage.data());
 
-  sbt_buffer.create(sbtSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+  sbt_buffer.create(sbtSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
   void* mapped = sbt_buffer.map();
   auto* pData = reinterpret_cast<u8*>(mapped);
@@ -151,30 +151,30 @@ void RtProgram::create_sbt() {
   }
   sbt_buffer.unmap();  
 
+  
   VkDeviceSize progSize = baseAlignment;
   VkDeviceSize rayGenOffset = 0u * progSize;
   VkDeviceSize missOffset = 1u * progSize;
   VkDeviceSize hitGroupOffset = 2u * progSize;
 
+  VkDeviceAddress sbt_addr = sbt_buffer.get_device_addr();
+
   rt_shaders.sbt_raygen = {
-    .buffer = sbt_buffer.buffer,
-    .offset = rayGenOffset,
+    .deviceAddress = sbt_addr+rayGenOffset,
     .stride = progSize,
-    .size = sbtSize
+    .size = progSize,
   };
 
   rt_shaders.sbt_miss = {
-    .buffer = sbt_buffer.buffer,
-    .offset = missOffset,
+    .deviceAddress = sbt_addr+missOffset,
     .stride = progSize,
-    .size = sbtSize
+    .size = progSize,
   };
 
   rt_shaders.sbt_rchit = {
-    .buffer = sbt_buffer.buffer,
-    .offset = hitGroupOffset,
+    .deviceAddress = sbt_addr+hitGroupOffset,
     .stride = progSize,
-    .size = sbtSize
+    .size = progSize,
   };
 }
 
@@ -232,13 +232,13 @@ void RtProgram::update_shaders(const char *rgen, const char *rmiss, const char *
   pipeline_info.pStages = shader_stages.data();
   pipeline_info.groupCount = (u32) shader_groups.size();
   pipeline_info.pGroups = shader_groups.data();
-  pipeline_info.maxRecursionDepth = vkcontext.device_props.rt_properties.maxRecursionDepth-1;
+  pipeline_info.maxPipelineRayRecursionDepth = vkcontext.device_props.rt_properties.maxRayRecursionDepth-1;
   pipeline_info.layout = pl_layout;
-  pipeline_info.libraries = lib_info;
+  pipeline_info.pLibraryInfo = nullptr;
 
   VK_CHECK(vkWaitForFences(vkcontext.device, 1, &vkcontext.frame_data[vkcontext.swapchain.image_index].render_fence, VK_TRUE, UINT64_MAX));
   vkDestroyPipeline(vkcontext.device, pipeline, nullptr);
-  VK_CHECK(vkCreateRayTracingPipelinesKHR(vkcontext.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline));
+  VK_CHECK(vkCreateRayTracingPipelinesKHR(vkcontext.device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline));
   create_sbt();
   info_log("compiled shaders...");
 }

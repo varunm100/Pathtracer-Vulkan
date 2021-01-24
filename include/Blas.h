@@ -3,15 +3,15 @@
 #include "VkInclude.h"
 
 struct AccelStructureGeometry {
-  std::vector<VkAccelerationStructureCreateGeometryTypeInfoKHR> geometry_type;
   std::vector<VkAccelerationStructureGeometryTrianglesDataKHR> vertex_data;
   std::vector<VkAccelerationStructureGeometryKHR> as_geometry;
-  std::vector<VkAccelerationStructureBuildOffsetInfoKHR> offset;
+  std::vector<VkAccelerationStructureBuildRangeInfoKHR> offset;
 };
 
 struct AccelStructure {
   VkAccelerationStructureKHR accel;
-  VmaAllocation allocation;
+  AllocatedBuffer buffer;
+
   void create(VkAccelerationStructureCreateInfoKHR& create_info, VmaMemoryUsage mem_usage = VMA_MEMORY_USAGE_GPU_ONLY);
 };
 
