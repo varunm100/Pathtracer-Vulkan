@@ -1,0 +1,220 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_nonuniform_qualifier : enable
+
+#include "raycommon.glsl"
+
+layout(binding = 0, set = 0) uniform CameraData {
+  mat4 view;
+  mat4 proj;
+  mat4 viewInverse;
+  mat4 projInverse;
+} cam;
+layout(binding = 1, set = 0) uniform accelerationStructureEXT topLevelAS;
+layout(binding = 2, set = 0, rgba32f) uniform image2D image;
+layout(binding = 3, set = 0, rgba32f) uniform image2D progressive;
+
+layout(binding = 3, set = 1) uniform sampler2D textures[];
+layout(binding = 4, set = 1, scalar) buffer Materials { Material m[]; } materials;
+layout(binding = 5, set = 1, scalar) buffer Lights { Light l[]; } lights;
+
+layout(location = 0) rayPayloadEXT hitPayload prd;
+
+layout( push_constant ) uniform RtConfig {
+  uint sample_count;
+  uint max_bounce;
+  float exposure;
+  uint num_lights;
+  uint frame_count;
+  bool show_lights;
+  bool enable_skybox;
+} PushConstant;
+
+#include "scatter.glsl"
+
+vec3 direct_lighting(inout uint rng_state, vec3 inter_p, in Material mat, vec3 incident, inout float lightPdf) {
+  vec3 L = vec3(0);
+  int index = int(rand(rng_state) * PushConstant.num_lights);
+  Light light = lights.l[index];
+
+  vec3 sample_normal;
+  vec3 prd_normal = prd.normal.xyz;
+
+  vec3 to_light = sample_light(index, rng_state, sample_normal) - inter_p;
+  float tlight = length(to_light);
+  to_light = normalize(to_light);
+  float cosine = dot(to_light, prd.normal);
+
+  if(dot(to_light, prd.normal) <= 0 || dot(to_light, sample_normal) >= 0) return L;
+
+  uint rayFlags = gl_RayFlagsOpaqueEXT;
+  traceRayEXT(topLevelAS,   // acceleration structure
+              rayFlags,     // rayFlags
+              0xFF,         // cullMask
+              0,            // stbRecordOffset
+              0,            // stbRecordStride
+              0,            // missIndex
+              inter_p.xyz,   // ray origin
+              0.001f,         // ray min range
+              to_light.xyz,// ray direction
+              10000.0f,         // ray max range
+              0);           // payload (location = 0);
+
+  bool in_shadow = prd.t < tlight;
+  if(!in_shadow) {
+    float bsdf_pdf = mat_pdf(incident, prd_normal, to_light, mat);
+    vec3 f = mat_eval(incident, to_light, prd_normal, mat);
+    float light_pdf = (tlight*tlight) / (light.radius_area_type.y * abs(dot(sample_normal, to_light)));
+    lightPdf = light_pdf;
+    L += power_heuristic(light_pdf, bsdf_pdf)*f*abs(dot(prd_normal, to_light))*light.emission/light_pdf;
+  }
+  return L;
+}
+
+
+vec3 accumulate(inout uint rng_state, inout vec3 radiance, inout vec3 throughput, vec3 inter_p, vec3 dir, inout float bsdfPdf, inout float lightPdf) {
+  Material mat = materials.m[prd.mat_id];
+
+  if(mat.tex_ids.x >= 0) { // albedo
+    mat.albedo *= vec4(texture(textures[int(mat.tex_ids.x)], prd.uv).xyz, 1);
+  }
+  
+  if(mat.albedo.w == 2) { // mirror
+    return reflect(dir, prd.normal.xyz);
+  }
+
+  if(mat.tex_ids.y >= 0) { // metallic roughness
+    vec2 metallic_roughness = texture(textures[int(mat.tex_ids.y)], prd.uv).xy;
+    mat.metallic = metallic_roughness.x;
+    mat.roughness = metallic_roughness.y;
+  }
+
+  vec3 normal = prd.normal;
+
+  radiance += mat.emission.xyz*throughput;
+
+  float light_pdf;
+  vec3 directL = direct_lighting(rng_state, inter_p, mat, dir, light_pdf);
+  lightPdf = light_pdf;
+  radiance += directL * throughput;
+
+  vec3 bsdf_dir = mat_sample(dir, normal, rng_state, mat);
+  float bsdf_pdf = mat_pdf(dir, normal, bsdf_dir, mat);
+
+  if(bsdf_pdf > 0.0) {
+    vec3 L = mat_eval(dir, bsdf_dir, normal, mat)*abs(dot(normal, bsdf_dir)) / bsdf_pdf;
+    throughput *= L;
+    bsdfPdf = bsdf_pdf;
+  }
+
+  return bsdf_dir;
+}
+
+bool intersects_light(vec3 origin, vec3 direction, out uint light_hit) {
+  bool hit_light = false;
+  float d;
+
+  for(uint l = 0; l < PushConstant.num_lights; ++l) {
+    Light light = lights.l[l];
+    if(light.radius_area_type.z == 0) { // rectangular light
+      vec3 normal = normalize(cross(light.u, light.v));
+      if(dot(normal, direction) > 0) continue;
+      vec4 plane = vec4(normal, dot(normal, light.pos));
+
+      vec3 u = light.u;
+      vec3 v = light.v;
+      u *= 1.0f / dot(u, u);
+      v *= 1.0f / dot(v, v);
+
+      d = rect_intersect(light.pos, u, v, plane, origin, direction);
+      if(d < 0) d=INFINITY;
+      if(d < prd.t) {
+        light_hit = l;
+        hit_light = true;
+        prd.t = d;
+      }
+    }
+  }
+  return hit_light;
+}
+
+void main() {
+  uint num_samples = PushConstant.sample_count;
+  uint num_bounces = PushConstant.max_bounce;
+  float gamma = 2.2;
+  float exposure = PushConstant.exposure;
+
+  uint rng_state = uint(PushConstant.frame_count+1)*init_random_seed(init_random_seed(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y), num_samples);
+  vec3 pixel_color = vec3(0);
+
+  uint rayFlags = gl_RayFlagsOpaqueEXT;
+  float tMin = 0.001f;
+  float tMax = 10000.0f;
+
+  for(uint s = 0; s < num_samples; ++s) {
+    const vec2 jitter = vec2(rand(rng_state), rand(rng_state))-vec2(0.5);
+    const vec2 pixel = gl_LaunchIDEXT.xy + jitter;
+
+    const vec2 uv = (pixel / gl_LaunchSizeEXT.xy) * 2.0 - 1.0;
+    
+    vec4 origin = cam.viewInverse * vec4(0, 0, 0, 1);
+    vec4 target = cam.projInverse * vec4(uv.x, uv.y, 1, 1);
+    vec4 direction = cam.viewInverse * vec4(normalize(target.xyz), 0);
+    vec3 ray_color = vec3(0);
+    vec3 throughput = vec3(1);
+
+    float bsdfPdf, lightPdf;
+    for(uint sc = 0; sc <= num_bounces; ++sc) {
+      traceRayEXT(topLevelAS,   // acceleration structure
+                    rayFlags,     // rayFlags
+                    0xFF,         // cullMask
+                    0,            // stbRecordOffset
+                    0,            // stbRecordStride
+                    0,            // missIndex
+                    origin.xyz,   // ray origin
+                    tMin,         // ray min range
+                    direction.xyz,// ray direction
+                    tMax,         // ray max range
+                    0);           // payload (location = 0);
+      uint light;
+      bool hit_light = intersects_light(origin.xyz, direction.xyz, light);
+      if(prd.t == INFINITY) {
+	if(PushConstant.enable_skybox == false){
+	  ray_color = vec3(0.0f);
+	  break;
+	}
+        ray_color = vec3(0.3f);
+        if(direction.y > 0.0f) {
+          ray_color = mix(vec3(1.0f), vec3(0.25f, 0.5f, 1.0f), direction.y);
+	}
+	break;
+      }
+      if(hit_light) {
+        if(sc == 0 && PushConstant.show_lights == true) {
+          ray_color = lights.l[light].emission*throughput;
+	} else {
+	  ray_color += power_heuristic(lightPdf, bsdfPdf)*lights.l[light].emission*throughput;
+	}
+	break;
+      }
+      origin = origin + prd.t*direction;// + vec4(prd.normal, 0)*0.0001f;
+      direction = vec4(accumulate(rng_state, ray_color, throughput, origin.xyz, -direction.xyz, bsdfPdf, lightPdf), 0);
+    }
+    pixel_color += ray_color;
+  }
+  pixel_color /= num_samples;
+
+  vec4 prev_color = imageLoad(progressive, ivec2(gl_LaunchIDEXT.xy));
+  vec3 last_frame_color = prev_color.xyz * float(PushConstant.frame_count);
+  pixel_color += last_frame_color;
+  pixel_color /= float(PushConstant.frame_count+1);
+  imageStore(progressive, ivec2(gl_LaunchIDEXT.xy), vec4(pixel_color, 1.0));
+
+  pixel_color *= exposure;
+  pixel_color = ACESFilm(pixel_color);
+  pixel_color = linear_to_srgb(pixel_color);
+  
+  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(pixel_color.z, pixel_color.y, pixel_color.x, 1.0));
+}
